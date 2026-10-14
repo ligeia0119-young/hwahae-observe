@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>참관 신청 현황</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
+<link rel="stylesheet" href="style.css">
+<script src="config.js"></script>
+<script src="programs.js"></script>
+<script src="common.js"></script>
+<script src="api.js"></script>
+</head>
+<body>
+<div id="demo" class="demo msg warn" hidden>미리보기 모드입니다. 이 기기에서 낸 신청만 보입니다.</div>
+<main class="sheet">
+  <header class="sheet-head">
+    <div class="org"><b id="org"></b><span class="sep"></span><span>관리자 확인</span></div>
+    <h1>팀장님 수업 참관 신청 현황</h1>
+  </header>
+  <div class="sheet-body" id="loginArea">
+    <form id="login" class="block" novalidate>
+      <label class="label" for="key">관리자 비밀번호</label>
+      <input type="password" id="key" autocomplete="current-password">
+      <div id="loginErr" class="msg err" role="alert" hidden></div>
+      <button type="submit" class="btn" id="loginBtn">현황 보기</button>
+    </form>
+  </div>
+  <div class="sheet-body" id="resultArea" hidden>
+    <div class="stat">
+      <span>신청자 <b id="nP">0</b>명</span>
+      <span>신청 <b id="nA">0</b>건</span>
+      <span>2명 넘는 팀장 <b id="nF">0</b>명</span>
+      <span>갱신 <b id="upd">-</b></span>
+    </div>
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab" id="vP" aria-selected="true">수업별</button>
+      <button type="button" class="tab" id="vM" aria-selected="false">사람별</button>
+    </div>
+    <section id="byProg" class="block"><div class="summary" id="progList"></div></section>
+    <section id="byPerson" class="block" hidden><div class="tablewrap"><table id="pTable"></table></div></section>
+    <div id="copyMsg" class="msg ok" hidden></div>
+    <div class="toolbar">
+      <button type="button" class="btn ghost" id="refresh">새로고침</button>
+      <button type="button" class="btn ghost" id="copy">엑셀용 복사</button>
+    </div>
+    <textarea id="copyText" readonly hidden style="width:100%;min-height:160px;font:inherit;font-size:12px;padding:10px"></textarea>
+  </div>
+</main>
+<script>
+(function(){
+  const P = [...window.PROGRAMS].sort((a,b) => U.firstKey(a).localeCompare(U.firstKey(b))), I = window.INFO, $ = id => document.getElementById(id), esc = U.esc;
+  $("org").textContent = I.org;
+  if (API.isDemo()) $("demo").hidden = false;
+  let key = ""; try { key = sessionStorage.getItem("hwahae_observe_admin") || ""; } catch(e){}
+  let rows = [];
+  async function load(){
+    const b = $("loginBtn"); b.disabled = true; b.textContent = "불러오는 중…";
+    try {
+      rows = (await API.list(key)).rows || [];
+      try { sessionStorage.setItem("hwahae_observe_admin", key); } catch(e){}
+      $("loginArea").hidden = true; $("resultArea").hidden = false; render();
+    } catch(e){ $("loginErr").textContent = e.message; $("loginErr").hidden = false; }
+    finally { b.disabled = false; b.textContent = "현황 보기"; }
+  }
+  function byProg(){ const by = {}; P.forEach(p => by[p.id] = []); rows.forEach(r => r.slots.forEach(id => by[id] && by[id].push(r))); return by; }
+  function render(){
+    rows.sort((a,b) => String(a.time).localeCompare(String(b.time)));
+    const by = byProg();
+    $("nP").textContent = rows.length; $("nA").textContent = rows.reduce((s,r) => s + r.slots.length, 0);
+    const tc = {}; P.forEach(p => tc[p.teacher] = (tc[p.teacher] || 0) + by[p.id].length);
+    $("nF").textContent = Object.values(tc).filter(n => n > I.cap).length;
+    $("upd").textContent = new Date().toLocaleTimeString("ko-KR", { hour:"2-digit", minute:"2-digit" });
+    $("progList").innerHTML = P.map(p => { const a = by[p.id];
+      return `<div class="adm-item${tc[p.teacher] > I.cap ? " hot" : ""}${a.length ? "" : " none"}">
+        <div class="adm-top"><b>${esc(p.id)}</b><span>${esc(p.school)} ${esc(p.place)} · ${esc(p.teacher)} 팀장</span><span class="c">${a.length}명 <small style="color:var(--muted);font-weight:500">(팀장 합계 ${tc[p.teacher]}명 · 선정 ${I.cap}명 이내)</small></span></div>
+        <div class="it-meta">${esc(U.whenText(p))}</div>
+        <div class="adm-names">${a.length ? a.map(r => `<span>${esc(r.name)} <small>(${esc(r.pin)} · ${esc(String(r.time).slice(5,16).replace("T"," "))})</small></span>`).join("") : "<small>신청 없음</small>"}</div>
+      </div>`; }).join("");
+    $("pTable").innerHTML = `<thead><tr><th>성명</th><th>뒤4자리</th><th>신청</th><th>참관 수업</th></tr></thead><tbody>` +
+      (rows.length ? rows.map(r => `<tr><td>${esc(r.name)}</td><td>${esc(r.pin)}</td><td>${r.slots.length}</td><td class="l">${P.filter(p => r.slots.includes(p.id)).map(p => esc(U.whenText(p) + " " + p.school.replace(/등학교$|학교$/,"") + " " + p.place + "(" + p.teacher + ")")).join("<br>")}</td></tr>`).join("")
+        : '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">아직 신청이 없습니다.</td></tr>') + "</tbody>";
+  }
+  function tsv(){
+    const by = byProg();
+    return [["ID","일시","학교","대상","교실","팀장","신청 수","팀장 합계","신청자"].join("\t")].concat((() => { const tc = {}; P.forEach(p => tc[p.teacher] = (tc[p.teacher] || 0) + by[p.id].length); return P.map(p => [p.id, U.whenText(p), p.school, p.aud === "교직원" ? "교직원 연수" : "학생", p.place, p.teacher, by[p.id].length, tc[p.teacher], by[p.id].map(r => r.name).join(", ")].join("\t")); })()).join("\n");
+  }
+  $("login").addEventListener("submit", e => { e.preventDefault(); $("loginErr").hidden = true; key = $("key").value; load(); });
+  $("refresh").addEventListener("click", load);
+  $("vP").addEventListener("click", () => { $("vP").setAttribute("aria-selected", true); $("vM").setAttribute("aria-selected", false); $("byProg").hidden = false; $("byPerson").hidden = true; });
+  $("vM").addEventListener("click", () => { $("vM").setAttribute("aria-selected", true); $("vP").setAttribute("aria-selected", false); $("byProg").hidden = true; $("byPerson").hidden = false; });
+  $("copy").addEventListener("click", () => {
+    const t = tsv(), ta = $("copyText");
+    navigator.clipboard.writeText(t).then(() => { $("copyMsg").textContent = "수업별 참관 현황을 복사했습니다. 엑셀 A1 칸에 붙여넣으세요."; $("copyMsg").hidden = false; ta.hidden = true; })
+      .catch(() => { ta.value = t; ta.hidden = false; ta.select(); $("copyMsg").textContent = "아래 내용을 전체 선택해 복사하세요."; $("copyMsg").hidden = false; });
+  });
+  if (key || API.isDemo()) load();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>팀장님 수업 참관 신청</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@700;800&family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
+<link rel="stylesheet" href="style.css">
+<script src="config.js"></script>
+<script src="programs.js"></script>
+<script src="common.js"></script>
+<script src="api.js"></script>
+</head>
+<body>
+
+<div id="demo" class="demo msg warn" hidden>미리보기 모드입니다. 신청 내용은 이 기기에만 임시 저장됩니다.</div>
+
+<main class="sheet">
+  <header class="sheet-head">
+    <div class="org"><b id="org"></b><span class="sep"></span><span id="dept"></span></div>
+    <h1 id="title"></h1>
+  </header>
+
+  <div class="sheet-body" id="formArea">
+    <div id="closed" class="msg closed-banner" hidden></div>
+
+    <section class="guide" aria-labelledby="gTitle">
+      <div class="period"><span>신청 기간 <b id="dl"></b></span><span>결과 안내 <b id="rs"></b></span></div>
+      <h2 id="gTitle">참관 안내</h2>
+      <ol>
+        <li>팀장님의 관계성장 프로그램 수업(학생 프로그램·교직원 연수)을 직접 보며 <b>운영 방법과 서클 진행을 함께 배우는 자리</b>입니다.</li>
+        <li>1인당 <span class="em">1개 수업</span>만 신청할 수 있습니다.</li>
+        <li>본 신청은 <span class="em">선착순이 아니며</span>, 신청 순서는 선정에 반영되지 않습니다.</li>
+        <li>팀장님 1명당 참관 인원은 <span class="em" id="g2"></span>입니다(팀장님 수업이 여러 개여도 합쳐서). 신청이 많으면 참관 기회가 고르게 돌아가도록 조정합니다.</li>
+        <li>본인이 맡은 수업과 <b>시간이 겹치지 않는지</b> 꼭 확인해 주세요. 본인 수업은 신청할 수 없습니다.</li>
+        <li>참관할 때
+          <ol>
+            <li>가. 수업 시작 10분 전까지 도착하여 팀장님과 인사를 나눠 주세요.</li>
+            <li>나. 교실 뒤편에서 조용히 참관하고, 수업 진행에는 참여하지 않습니다(팀장님이 요청하실 때는 제외).</li>
+            <li>다. 학생 얼굴이 나오는 사진·영상 촬영은 하지 않습니다.</li>
+          </ol>
+        </li>
+        <li>선정 결과는 <span id="rs2"></span></li>
+      </ol>
+    </section>
+
+    <section class="block" aria-labelledby="s1">
+      <h2 class="sec" id="s1">신청자 정보</h2>
+      <div class="who">
+        <div class="field"><label for="name">성명</label><input type="text" id="name" maxlength="20" autocomplete="name" placeholder="예) 홍길동"></div>
+        <div class="field"><label for="pin">휴대폰 뒤 4자리</label><input type="text" id="pin" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="0000"></div>
+      </div>
+      <p class="hint">성명과 뒤 4자리는 본인 확인용입니다. 다시 들어와서 <b>내 신청 불러오기</b>를 누르면 신청을 바꾸거나 취소할 수 있습니다. 다른 분의 신청 명단과 인원은 공개되지 않습니다.</p>
+      <button type="button" class="linkbtn" id="loadBtn">내 신청 불러오기</button>
+      <div id="loadMsg" class="msg" hidden></div>
+    </section>
+
+    <section class="block" aria-labelledby="s2">
+      <h2 class="sec" id="s2">참관할 수업 선택 <span class="hint" style="font-weight:500" id="pickHint"></span></h2>
+      <div class="list" id="list"></div>
+    </section>
+
+    <div class="bar-sticky">
+      <div id="err" class="msg err" role="alert" hidden></div>
+      <div id="confirmBox" class="msg warn" hidden>
+        <div id="confirmText"></div>
+        <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">
+          <button type="button" class="linkbtn" id="cfReplace">새로 고른 내용으로 바꾸기</button>
+          <button type="button" class="linkbtn" id="cfLoad">기존 신청 불러오기</button>
+        </div>
+      </div>
+      <div class="bar-row">
+        <div class="sum">선택 <b id="selN">0</b> / <span id="maxN"></span>개</div>
+        <button type="button" class="btn" id="submitBtn">신청하기</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="sheet-body" id="doneArea" hidden>
+    <div class="done">
+      <div class="mark"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1f7a4d" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+      <h2 id="doneTitle">신청되었습니다</h2>
+      <p id="doneWho"></p>
+    </div>
+    <ul class="recap" id="recap"></ul>
+    <p class="hint">선정 결과는 10. 15.(목) 저녁까지 문자로 안내드립니다. 마감 전까지는 다른 수업으로 바꾸거나 취소할 수 있습니다.</p>
+    <button type="button" class="btn ghost" id="again">신청 내용 고치기</button>
+    <button type="button" class="btn ghost danger" id="cancelBtn">신청 취소</button>
+    <div id="cancelBox" class="msg warn" hidden>
+      참관 신청을 모두 취소할까요? 취소한 자리는 다른 분이 신청할 수 있습니다.
+      <div style="display:flex;gap:8px;margin-top:8px"><button type="button" class="linkbtn danger" id="cancelYes">취소하기</button><button type="button" class="linkbtn" id="cancelNo">그대로 두기</button></div>
+    </div>
+  </div>
+</main>
+
+<p class="foot" id="foot"></p>
+
+<script>
+(function(){
+  const I = window.INFO, P = window.PROGRAMS, $ = id => document.getElementById(id), esc = U.esc;
+  $("org").textContent = I.org; $("dept").textContent = I.dept; $("title").textContent = I.title;
+  $("dl").textContent = I.periodText; $("rs").textContent = I.resultText.replace(/ 문자로 안내$/, "");
+  $("rs2").textContent = I.resultText + "합니다.";
+  $("g2").textContent = I.cap + "명 이내";
+  $("pickHint").textContent = "(1인 1개)"; $("maxN").textContent = I.maxPick;
+  if (I.contact) $("foot").textContent = "문의: " + I.contact;
+  if (API.isDemo()) $("demo").hidden = false;
+
+  const notYet = () => Date.now() < new Date(I.start).getTime();
+  const ended = () => Date.now() > new Date(I.deadline).getTime();
+  const closed = () => notYet() || ended();
+
+  let counts = {}, sel = new Set(), mineSlots = new Set(), loadedFor = null;
+  const check = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  const T = id => P.find(p => p.id === id).teacher;
+
+  function render(){
+    const items = [...P].sort((a,b) => U.firstKey(a).localeCompare(U.firstKey(b)));
+    let html = "", last = "";
+    items.forEach(p => {
+      const m = p.dates[0].slice(0,7);
+      if (m !== last){ last = m; html += `<div class="group-h"><b>${+m.slice(5)}월</b><span></span></div>`; }
+      const on = sel.has(p.id);
+      const dis = closed();
+      html += `<label class="item${on ? " on" : ""}" for="c_${p.id}">
+        <input type="checkbox" id="c_${p.id}" value="${p.id}" ${on ? "checked" : ""} ${dis ? "disabled" : ""}>
+        <span class="box" aria-hidden="true">${check}</span>
+        <span class="it-main">
+          <span class="it-when">${esc(U.whenText(p))}</span>
+          <span class="it-school"><span class="lv">${esc(p.lv)}</span>${esc(p.school)} ${esc(p.place)}</span>
+          <span class="it-meta"><span><span class="tl">${esc(p.team)} 팀장</span>${esc(p.teacher)} 위원님</span><span>${p.aud === "교직원" ? "교직원 연수" : "학생 프로그램"} ${esc(p.n)}명</span></span>
+          ${p.note ? `<span class="it-note">${esc(p.note)}</span>` : ""}
+        </span>
+      </label>`;
+    });
+    $("list").innerHTML = html;
+    $("selN").textContent = sel.size;
+  }
+
+  $("list").addEventListener("change", e => {
+    if (e.target.type !== "checkbox") return;
+    const id = e.target.value;
+    if (e.target.checked){
+      const p = P.find(x => x.id === id);
+      if (norm($("name").value) === norm(p.teacher)){ e.target.checked = false; showErr("본인이 운영하는 수업은 참관 신청할 수 없습니다."); return; }
+      sel = new Set([id]);   // 1인 1개: 다른 수업을 누르면 바뀜
+    } else sel.delete(id);
+    showErr(""); $("confirmBox").hidden = true; render();
+  });
+  $("pin").addEventListener("input", e => { e.target.value = e.target.value.replace(/\D/g, "").slice(0,4); });
+
+  const norm = s => String(s || "").replace(/\s+/g, "");
+  function who(){
+    const name = $("name").value.trim(), pin = $("pin").value.trim();
+    if (name.length < 2) return { error:"성명을 입력해 주세요.", focus:"name" };
+    if (!/^\d{4}$/.test(pin)) return { error:"휴대폰 뒤 4자리를 숫자로 입력해 주세요.", focus:"pin" };
+    return { name, pin };
+  }
+  function showErr(t){ $("err").textContent = t; $("err").hidden = !t; }
+  function msg(el, kind, t){ el.className = "msg " + kind; el.textContent = t; el.hidden = !t; }
+  // 신청 인원은 화면에 표시하지 않습니다(관리자 화면에서만 확인)
+
+  async function loadMine(){
+    const w = who(); if (w.error){ msg($("loadMsg"), "err", w.error); $(w.focus).focus(); return; }
+    $("loadBtn").disabled = true;
+    try {
+      const r = await API.mine(w.name, w.pin);
+      loadedFor = w.name + "|" + w.pin;
+      if (r.found){
+        mineSlots = new Set(r.record.slots); sel = new Set(r.record.slots.filter(id => P.some(p => p.id === id)));
+        msg($("loadMsg"), "ok", `${w.name} 님의 신청 ${sel.size}건을 불러왔습니다. 바꾼 뒤 신청하기를 누르세요.`);
+      } else { mineSlots = new Set(); msg($("loadMsg"), "warn", "이 성명과 번호로 신청한 내역이 없습니다. 새로 신청해 주세요."); }
+      render();
+    } catch(e){ msg($("loadMsg"), "err", "불러오지 못했습니다. 잠시 뒤 다시 눌러 주세요. (" + e.message + ")"); }
+    finally { $("loadBtn").disabled = false; }
+  }
+  $("loadBtn").addEventListener("click", loadMine);
+  $("cfLoad").addEventListener("click", () => { $("confirmBox").hidden = true; loadMine(); });
+
+  async function doSubmit(force){
+    showErr("");
+    if (notYet()){ showErr("신청은 " + I.periodText.split("~")[0].trim() + "부터 가능합니다."); return; }
+    if (ended()){ showErr("신청 기간이 끝났습니다."); return; }
+    const w = who(); if (w.error){ showErr(w.error); $(w.focus).focus(); return; }
+    if (!sel.size){ showErr("참관할 수업을 1개 이상 골라 주세요."); return; }
+    const own = P.filter(p => sel.has(p.id) && norm(p.teacher) === norm(w.name));
+    if (own.length){ showErr("본인이 운영하는 수업은 참관 신청할 수 없습니다."); return; }
+    const btn = $("submitBtn"); btn.disabled = true; btn.textContent = "확인 중…";
+    try {
+      if (!force && loadedFor !== w.name + "|" + w.pin){
+        const r = await API.mine(w.name, w.pin);
+        if (r.found){
+          mineSlots = new Set(r.record.slots);
+          $("confirmText").textContent = `${w.name} 님은 이미 참관 신청을 하셨습니다. 지금 고른 수업으로 바꿀까요, 아니면 기존 신청을 불러올까요?`;
+          $("confirmBox").hidden = false; return;
+        }
+      }
+      btn.textContent = "신청하는 중…";
+      const slots = P.filter(p => sel.has(p.id)).map(p => p.id);
+      const res = await API.submit(w.name, w.pin, slots);
+      loadedFor = w.name + "|" + w.pin; mineSlots = new Set(slots);
+      done(w, slots, res.updated);
+    } catch(e){
+      if (e.full && e.full.length){
+        e.full.forEach(id => sel.delete(id)); render();
+        const names = e.full.map(id => { const p = P.find(x => x.id === id); return p ? p.teacher + " 팀장님(" + U.whenText(p) + " " + p.school + ")" : id; });
+        showErr("방금 참관 인원이 다 찬 팀장님 수업이 있어 선택에서 뺐습니다: " + names.join(", ") + ". 다른 수업을 골라 다시 신청해 주세요.");
+      } else showErr("신청하지 못했습니다. 인터넷 연결을 확인하고 다시 눌러 주세요. (" + e.message + ")");
+    } finally { btn.disabled = closed(); btn.textContent = "신청하기"; }
+  }
+  $("submitBtn").addEventListener("click", () => doSubmit(false));
+  $("cfReplace").addEventListener("click", () => { $("confirmBox").hidden = true; loadedFor = $("name").value.trim() + "|" + $("pin").value.trim(); doSubmit(true); });
+
+  function done(w, slots, updated){
+    $("doneTitle").textContent = updated ? "신청 내용이 바뀌었습니다" : "신청되었습니다";
+    $("doneWho").textContent = `${w.name} 님 · 참관 신청`;
+    $("recap").innerHTML = P.filter(p => slots.includes(p.id)).sort((a,b) => U.firstKey(a).localeCompare(U.firstKey(b)))
+      .map(p => `<li><b>${esc(U.whenText(p))}</b><br>${esc(p.school)} ${esc(p.place)} · ${esc(p.teacher)} 팀장님 ${p.aud === "교직원" ? "교직원 연수" : "학생 프로그램"}</li>`).join("");
+    $("formArea").hidden = true; $("doneArea").hidden = false; $("cancelBox").hidden = true; window.scrollTo({ top:0 });
+  }
+  $("again").addEventListener("click", () => { $("doneArea").hidden = true; $("formArea").hidden = false; render(); });
+  $("cancelBtn").addEventListener("click", () => { $("cancelBox").hidden = false; });
+  $("cancelNo").addEventListener("click", () => { $("cancelBox").hidden = true; });
+  $("cancelYes").addEventListener("click", async () => {
+    const w = who(); if (w.error) return;
+    $("cancelYes").disabled = true;
+    try {
+      await API.cancel(w.name, w.pin);
+      sel = new Set(); mineSlots = new Set(); loadedFor = null;
+      $("doneArea").hidden = true; $("formArea").hidden = false;
+      msg($("loadMsg"), "ok", "참관 신청을 취소했습니다."); render(); window.scrollTo({ top:0 });
+    } catch(e){ $("cancelBox").textContent = "취소하지 못했습니다. (" + e.message + ")"; }
+    finally { $("cancelYes").disabled = false; }
+  });
+
+  if (closed()){
+    $("closed").textContent = notYet()
+      ? "신청은 " + I.periodText.split("~")[0].trim() + "부터 가능합니다. 지금은 수업 목록만 미리 볼 수 있습니다."
+      : "신청 기간이 끝났습니다. 신청 내용 확인만 가능합니다.";
+    $("closed").hidden = false; $("submitBtn").disabled = true; $("cancelBtn").hidden = true;
+    if (notYet()) setTimeout(() => location.reload(), Math.min(new Date(I.start).getTime() - Date.now() + 1500, 2147483000));
+  }
+  render();
+})();
+</script>
+</body>
+</html>
